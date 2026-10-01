@@ -82,7 +82,41 @@ function renderProjects() {
       </button>
     </article>`).join('');
   grid.querySelectorAll('.project-open').forEach((button) => button.addEventListener('click', () => openProject(Number(button.dataset.project))));
+  replaceArrowGlyphs(grid);
   observeReveals(grid.querySelectorAll('.reveal'));
+}
+
+function replaceArrowGlyphs(root) {
+  const paths = new Map([
+    ['↗', 'M5 19 19 5M8 5h11v11'],
+    ['↘', 'M5 5 19 19M19 9v10H9'],
+    ['↑', 'M12 19V5m-7 7 7-7 7 7']
+  ]);
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+  while (walker.nextNode()) {
+    if (/[↗↘↑]/.test(walker.currentNode.nodeValue)) textNodes.push(walker.currentNode);
+  }
+
+  textNodes.forEach((node) => {
+    const fragment = document.createDocumentFragment();
+    node.nodeValue.split(/([↗↘↑])/).forEach((part) => {
+      const path = paths.get(part);
+      if (!path) {
+        fragment.append(document.createTextNode(part));
+        return;
+      }
+      const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      icon.setAttribute('class', 'glyph-arrow');
+      icon.setAttribute('viewBox', '0 0 24 24');
+      icon.setAttribute('aria-hidden', 'true');
+      line.setAttribute('d', path);
+      icon.append(line);
+      fragment.append(icon);
+    });
+    node.replaceWith(fragment);
+  });
 }
 
 function openProject(index) {
@@ -126,6 +160,7 @@ function observeReveals(elements = document.querySelectorAll('.reveal')) {
 }
 
 translatePage();
+replaceArrowGlyphs(document.body);
 document.querySelector('#year').textContent = new Date().getFullYear();
 observeReveals();
 
